@@ -80,5 +80,68 @@ namespace CustomerServiceCampaign.Api.Controllers
             // Vraćamo HTTP 200 i kreirani zapis.
             return Ok(reward);
         }
+        // POST /api/Campaign/import
+        // Prima CSV izveštaj sa korisnicima koji su uspešno obavili kupovinu.
+        [HttpPost("import")]
+        public async Task<IActionResult> ImportCsv(IFormFile file)
+        {
+            // Proveravamo da li je fajl poslat i da li sadrži podatke.
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("CSV fajl nije prosleđen.");
+            }
+
+            // Otvaramo CSV fajl za čitanje.
+            using var reader = new StreamReader(file.OpenReadStream());
+
+            // Prvi red CSV fajla je zaglavlje: CustomerId.
+            // Njega čitamo i preskačemo.
+            await reader.ReadLineAsync();
+
+            // Brojač uspešno ažuriranih nagrada.
+            int updatedRewards = 0;
+
+            // Čitamo CSV red po red dok ne stignemo do kraja fajla.
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+
+                // Preskačemo prazan red.
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                // Pokušavamo da vrednost iz reda pretvorimo u CustomerId.
+                if (!int.TryParse(line.Trim(), out int customerId))
+                {
+                    continue;
+                }
+
+                // Pronalazimo sve nagrade za tog korisnika
+                // koje još nisu označene kao uspešna kupovina.
+                var rewards = await _context.CampaignRewards
+                    .Where(r => r.CustomerId == customerId &&
+                                !r.PurchaseSuccessful)
+                    .ToListAsync();
+
+                // Označavamo pronađene nagrade kao uspešno realizovane.
+                foreach (var reward in rewards)
+                {
+                    reward.PurchaseSuccessful = true;
+                    updatedRewards++;
+                }
+            }
+
+            // Čuvamo sve promene u SQLite bazi.
+            await _context.SaveChangesAsync();
+
+            // Vraćamo informaciju koliko je zapisa ažurirano.
+            return Ok(new
+            {
+                Message = "CSV fajl je uspešno obrađen.",
+                UpdatedRewards = updatedRewards
+            });
+        }
     }
 }
