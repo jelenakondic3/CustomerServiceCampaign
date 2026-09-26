@@ -1,6 +1,7 @@
 using CustomerServiceCampaign.Api.Data;
 using CustomerServiceCampaign.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using CustomerServiceCampaign.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +20,33 @@ builder.Services.AddScoped<PersonService>();
 // Omogu?ava pronalaženje API endpoint-a.
 builder.Services.AddEndpointsApiExplorer();
 
-// Dodaje Swagger za dokumentovanje i testiranje API-ja.
-builder.Services.AddSwaggerGen();
+// Podešavamo Swagger za testiranje zašti?enih API endpoint-a.
+// API key se unosi preko Authorize dugmeta i šalje kroz X-API-Key HTTP header.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "Unesite API key",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Name = "X-API-Key",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -33,6 +59,8 @@ if (app.Environment.IsDevelopment())
 
 // Preusmerava HTTP zahteve na HTTPS.
 app.UseHttpsRedirection();
+
+app.UseMiddleware<ApiKeyMiddleware>();
 
 // Omogu?ava authorization middleware.
 app.UseAuthorization();
