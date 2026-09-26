@@ -90,13 +90,22 @@ namespace CustomerServiceCampaign.Api.Controllers
             {
                 return BadRequest("CSV fajl nije prosleđen.");
             }
-
+            // Proveravamo da li prosleđeni fajl ima .csv ekstenziju.
+            if (Path.GetExtension(file.FileName).ToLowerInvariant() != ".csv")
+            {
+                return BadRequest("Dozvoljen je samo CSV fajl.");
+            }
             // Otvaramo CSV fajl za čitanje.
             using var reader = new StreamReader(file.OpenReadStream());
 
-            // Prvi red CSV fajla je zaglavlje: CustomerId.
-            // Njega čitamo i preskačemo.
-            await reader.ReadLineAsync();
+            // Čitamo prvi red CSV fajla.
+            var header = await reader.ReadLineAsync();
+
+            // Proveravamo da li CSV ima očekivano zaglavlje CustomerId.
+            if (header?.Trim() != "CustomerId")
+            {
+                return BadRequest("CSV fajl mora da sadrži zaglavlje CustomerId.");
+            }
 
             // Brojač uspešno ažuriranih nagrada.
             int updatedRewards = 0;
@@ -113,9 +122,11 @@ namespace CustomerServiceCampaign.Api.Controllers
                 }
 
                 // Pokušavamo da vrednost iz reda pretvorimo u CustomerId.
-                if (!int.TryParse(line.Trim(), out int customerId))
+                // Ako vrednost nije pozitivan ceo broj, CSV nije ispravan.
+                if (!int.TryParse(line.Trim(), out int customerId) || customerId <= 0)
                 {
-                    continue;
+                    return BadRequest(
+                        $"Neispravan CustomerId u CSV fajlu: {line}");
                 }
 
                 // Pronalazimo sve nagrade za tog korisnika
