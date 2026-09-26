@@ -143,5 +143,28 @@ namespace CustomerServiceCampaign.Api.Controllers
                 UpdatedRewards = updatedRewards
             });
         }
+        // GET /api/Campaign/results
+        // Vraća zbirne rezultate kampanje.
+        [HttpGet("results")]
+        public async Task<IActionResult> GetResults()
+        {
+            // Ukupan broj dodeljenih nagrada.
+            var totalRewards = await _context.CampaignRewards.CountAsync();
+
+            // Broj nagrada kod kojih je korisnik uspešno obavio kupovinu.
+            var successfulPurchases = await _context.CampaignRewards
+                .CountAsync(r => r.PurchaseSuccessful);
+
+            // Broj nagrada kod kojih kupovina nije potvrđena kao uspešna.
+            var unsuccessfulPurchases = totalRewards - successfulPurchases;
+
+            // Vraćamo rezultate kampanje.
+            return Ok(new
+            {
+                TotalRewards = totalRewards,
+                SuccessfulPurchases = successfulPurchases,
+                UnsuccessfulPurchases = unsuccessfulPurchases
+            });
+        }
     }
 }
