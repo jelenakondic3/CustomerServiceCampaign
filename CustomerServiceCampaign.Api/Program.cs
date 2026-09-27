@@ -1,27 +1,28 @@
-using CustomerServiceCampaign.Api.Data;
+Ôªøusing CustomerServiceCampaign.Api.Data;
 using CustomerServiceCampaign.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using CustomerServiceCampaign.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodajemo podröku za API kontrolere.
+// Dodajemo podr≈°ku za API kontrolere.
 builder.Services.AddControllers();
 
 // Registrujemo CampaignDbContext i povezujemo ga sa SQLite bazom.
-// Connection string "DefaultConnection" se ?ita iz appsettings.json.
+// Connection string "DefaultConnection" se cita iz appsettings.json.
 builder.Services.AddDbContext<CampaignDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Registrujemo PersonService u Dependency Injection sistem.
-// AddScoped zna?i da se kreira jedna instanca servisa za svaki HTTP zahtev.
-builder.Services.AddScoped<PersonService>();
+// Registrujemo PersonService kao implementaciju IPersonService interfejsa.
+// Kada controller zatra≈æi IPersonService, Dependency Injection
+// ƒáe mu proslediti instancu PersonService-a.
+builder.Services.AddScoped<IPersonService, PersonService>();
 
-// Omogu?ava pronalaûenje API endpoint-a.
+// Omogucava pronala≈æenje API endpoint-a.
 builder.Services.AddEndpointsApiExplorer();
 
-// Podeöavamo Swagger za testiranje zaöti?enih API endpoint-a.
-// API key se unosi preko Authorize dugmeta i öalje kroz X-API-Key HTTP header.
+// Pode≈°avamo Swagger za testiranje za≈°ticenih API endpoint-a.
+// API key se unosi preko Authorize dugmeta i ≈°alje kroz X-API-Key HTTP header.
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -50,7 +51,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// U Development okruûenju uklju?ujemo Swagger.
+// U Development okru≈æenju ukljucujemo Swagger.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -62,11 +63,11 @@ app.UseHttpsRedirection();
 
 app.UseMiddleware<ApiKeyMiddleware>();
 
-// Omogu?ava authorization middleware.
+// Omogucava authorization middleware.
 app.UseAuthorization();
 
-// Povezuje naöe controllere sa odgovaraju?im API rutama.
+// Povezuje na≈°e controllere sa odgovarajucim API rutama.
 app.MapControllers();
 
-// Pokre?e aplikaciju.
+// Pokrece aplikaciju.
 app.Run();

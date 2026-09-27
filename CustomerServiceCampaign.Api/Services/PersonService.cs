@@ -8,7 +8,7 @@ namespace CustomerServiceCampaign.Api.Services
 {
     // Naš servis koji služi kao posrednik između aplikacije
     // i eksternog FindPerson SOAP servisa.
-    public class PersonService
+    public class PersonService : IPersonService
     {
         // Metoda prima ID korisnika i asinhrono vraća pronađenu osobu.
         // Task<Person?> znači da će rezultat biti Person,
